@@ -17,3 +17,13 @@ dist/
 .DS_Store
 *.log
 .env*
+
+backend/.venv
+backend/__pycache__
+backend/test_post.py
+backend/test.py
+backend/run.bat
+backend/one.txt
+backend/absolute-run.bat
+backend/api_demo.py
+backend/http手搓代码.py
