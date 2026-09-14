@@ -21,7 +21,9 @@ dist/
 backend/.venv
 backend/__pycache__
 backend/test_post.py
+backend/test_get.py
 backend/test.py
+backend/test2.py
 backend/run.bat
 backend/one.txt
 backend/absolute-run.bat
