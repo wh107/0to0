@@ -13,8 +13,29 @@ from fastapi.middleware.cors import CORSMiddleware
 from pypinyin import lazy_pinyin, Style  # 三方库nlp
 from snownlp import SnowNLP  # 三方库nlp
 
-from storage import init_db,save_record, get_history  # 从存储层调取
+from storage import init_db, save_record, get_history  # 从存储层调取
 from datetime import datetime, timezone  # 标准库
+
+# --------- 使用唯一id生成功能---------
+import uuid
+from fastapi import Request, Response
+
+
+def get_session_id(request: Request, response: Response) -> str:
+    sid = request.cookies.get("session_id")  # 先看有没有纸条
+    if not sid:  # 第一次来，没有——发一张
+        sid = uuid.uuid4().hex  # 一串随机、不重复的 id
+        response.set_cookie(
+            "session_id",
+            sid,
+            httponly=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 30,  # 记 30 天
+        )
+    return sid
+
+
+# -----------------------------------
 
 init_db()
 
@@ -25,6 +46,7 @@ app.add_middleware(
     allow_origins=["http://localhost:3001"],
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
+    allow_credentials=True,  # ← 新增：允许跨源请求带上 cookie
 )
 
 
@@ -63,7 +85,8 @@ def get_profile():
 
 
 @app.post("/api/analyze")
-def analyze(req: AnalyzeRequest):
+def analyze(req: AnalyzeRequest, request: Request, response: Response):
+    sid = get_session_id(request, response)
     text = req.text
     score = round(SnowNLP(text).sentiments, 2)  # 真模型打的分
     result = {
@@ -77,10 +100,11 @@ def analyze(req: AnalyzeRequest):
             timespec="seconds"
         ),  # ← 新增
     }
-    save_record(result)  # ← 存档到文件
-    return result
+    save_record(sid, result)          # 存的时候盖上这个会话的记号
+    return result                     # ← 返回体一个字没变，session_id 只走 cookie
 
 
 @app.get("/api/history")
-def history():
-    return get_history(10)
+def history(request: Request, response: Response, limit: int = 10):
+    sid = get_session_id(request, response)
+    return get_history(sid, limit)    # 只回这个会话自己的

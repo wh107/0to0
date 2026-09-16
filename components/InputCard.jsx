@@ -13,11 +13,13 @@ export default function InputCard({ onResult }) {
 
   async function handleAnalyze() {
     setError("");
-
+	
+	// InputCard 里发分析请求
     try {               
       const res = await fetch(`${API}/api/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+		credentials: "include",            // ← 新增：带上 cookie
         body: JSON.stringify({ text }),
       });
 

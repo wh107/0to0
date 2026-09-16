@@ -28,6 +28,7 @@ def init_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT,
                 text TEXT,
                 score REAL,
                 label TEXT,
@@ -35,7 +36,10 @@ def init_db():
                 created_at TEXT
             )
         """)
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_history_created ON history(created_at)")
+        cur.execute(
+            "CREATE INDEX IF NOT EXISTS idx_history_session_created "
+            "ON history(session_id, created_at)"
+        )
         conn.commit()  # 提交建表操作（无论是否新建，都确保事务结束）
     except Exception as e:
         print("建表失败：", e)
@@ -50,10 +54,8 @@ def init_db():
 #             return json.load(f)
 #     except FileNotFoundError:
 #         return []
-#原本用于将数据从json文件读到内存里面，但之后没有认回去调用。直接从数据库里取了，
-#所以直接删除掉即可。
-
-
+# 原本用于将数据从json文件读到内存里面，但之后没有认回去调用。直接从数据库里取了，
+# 所以直接删除掉即可。
 
 
 # 先读出文件，再添加，最后写数据到文件
@@ -62,40 +64,64 @@ def init_db():
 #     records.append(record)
 #     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
 #         json.dump(records, f, ensure_ascii=False, indent=2)
-def save_record(record):
-    values = [
-        record["text"],
-        record["score"],
-        record["label"],
-        record["pinyin"],
-        record["created_at"],
-    ]
-    
+# def save_record(record):
+#     values = [
+#         record["text"],
+#         record["score"],
+#         record["label"],
+#         record["pinyin"],
+#         record["created_at"],
+#     ]
+
+#     conn = get_conn()
+#     try:
+#         cur = conn.cursor()
+#         cur.execute(
+#             """
+#             INSERT INTO history 
+#             (text, score, label, pinyin, created_at)
+#             VALUES (?, ?, ?, ?, ?)
+#             """,
+#             values,
+#         )
+#         conn.commit()
+#     finally:
+#         conn.close()
+def save_record(session_id, record):
     conn = get_conn()
-    try:
-        cur = conn.cursor()    
-        cur.execute(
-            """
-            INSERT INTO history 
-            (text, score, label, pinyin, created_at)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            values,
-        )
-        conn.commit()
-    finally:
-        conn.close()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO history (session_id, text, score, label, pinyin, created_at)"
+        " VALUES (?, ?, ?, ?, ?, ?)",
+        [session_id, record["text"], record["score"],
+         record["label"], record["pinyin"], record["created_at"]],
+    )
+    conn.commit()
+    conn.close()
 
 # def get_history(limit): #更换5
 #     records = load_history()  # 读出文件里的全部记录
 #     records.reverse()  # 倒过来：新的排前面
 #     return records[:limit]  # 切一刀：返回指定数量的记录。
-def get_history(limit):
+# def get_history(limit):
+#     conn = get_conn()
+#     cur = conn.cursor()
+#     rows = cur.execute(
+#         "SELECT * FROM history ORDER BY created_at DESC LIMIT ?",
+#         [limit],
+#     ).fetchall()
+#     conn.close()
+
+#     records = []
+#     for row in rows:
+#         records.append(dict(row))
+#     return records
+def get_history(session_id, limit):
     conn = get_conn()
     cur = conn.cursor()
     rows = cur.execute(
-        "SELECT * FROM history ORDER BY created_at DESC LIMIT ?",
-        [limit],
+        "SELECT * FROM history WHERE session_id = ? ORDER BY created_at DESC LIMIT ?",
+        [session_id, limit],
     ).fetchall()
     conn.close()
 
@@ -103,4 +129,3 @@ def get_history(limit):
     for row in rows:
         records.append(dict(row))
     return records
-
