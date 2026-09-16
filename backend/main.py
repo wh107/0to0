@@ -13,14 +13,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pypinyin import lazy_pinyin, Style  # 三方库nlp
 from snownlp import SnowNLP  # 三方库nlp
 
-from storage import save_record,get_history #从存储层调取
+from storage import init_db,save_record, get_history  # 从存储层调取
 from datetime import datetime, timezone  # 标准库
 
-# 定义用于存储内容的json文件
-HISTORY_FILE = "history.json"
-
-
-
+init_db()
 
 app = FastAPI()
 
@@ -88,4 +84,3 @@ def analyze(req: AnalyzeRequest):
 @app.get("/api/history")
 def history():
     return get_history(10)
-

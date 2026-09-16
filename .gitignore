@@ -29,3 +29,5 @@ backend/one.txt
 backend/absolute-run.bat
 backend/api_demo.py
 backend/http手搓代码.py
+backend/history.db
+backend/history.json
