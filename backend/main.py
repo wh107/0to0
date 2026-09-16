@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """
 Created on Mon Sep 14 16:25:14 2026
@@ -8,8 +9,33 @@ Created on Mon Sep 14 16:25:14 2026
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from pypinyin import lazy_pinyin, Style
-from snownlp import SnowNLP
+
+from pypinyin import lazy_pinyin, Style  # 三方库nlp
+from snownlp import SnowNLP  # 三方库nlp
+
+import json  # 标准库
+from datetime import datetime, timezone  # 标准库
+
+# 定义用于存储内容的json文件
+HISTORY_FILE = "history.json"
+
+
+# 读文件
+def load_history():
+    try:
+        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+
+# 先读出文件，再添加，最后写数据到文件
+def save_record(record):
+    records = load_history()
+    records.append(record)
+    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, ensure_ascii=False, indent=2)
+
 
 app = FastAPI()
 
@@ -59,11 +85,23 @@ def get_profile():
 def analyze(req: AnalyzeRequest):
     text = req.text
     score = round(SnowNLP(text).sentiments, 2)  # 真模型打的分
-    return {
+    result = {
         "text": req.text,
         "score": score,
         "label": score_label(score),
         "pinyin": " ".join(
             lazy_pinyin(text, style=Style.TONE)
         ),  # 真拼音，带声调,
+        "created_at": datetime.now(timezone.utc).isoformat(
+            timespec="seconds"
+        ),  # ← 新增
     }
+    save_record(result)  # ← 存档到文件
+    return result
+
+
+@app.get("/api/history")
+def history():
+    records = load_history()  # 读出文件里的全部记录
+    records.reverse()  # 倒过来：新的排前面
+    return records[:2]  # 切一刀：只留最近 10 条
