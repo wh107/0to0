@@ -13,28 +13,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from pypinyin import lazy_pinyin, Style  # 三方库nlp
 from snownlp import SnowNLP  # 三方库nlp
 
-import json  # 标准库
+from storage import save_record,get_history #从存储层调取
 from datetime import datetime, timezone  # 标准库
 
 # 定义用于存储内容的json文件
 HISTORY_FILE = "history.json"
 
 
-# 读文件
-def load_history():
-    try:
-        with open(HISTORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return []
-
-
-# 先读出文件，再添加，最后写数据到文件
-def save_record(record):
-    records = load_history()
-    records.append(record)
-    with open(HISTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(records, f, ensure_ascii=False, indent=2)
 
 
 app = FastAPI()
@@ -102,6 +87,5 @@ def analyze(req: AnalyzeRequest):
 
 @app.get("/api/history")
 def history():
-    records = load_history()  # 读出文件里的全部记录
-    records.reverse()  # 倒过来：新的排前面
-    return records[:2]  # 切一刀：只留最近 10 条
+    return get_history(10)
+

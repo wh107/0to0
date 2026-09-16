@@ -26,5 +26,12 @@
     "label": "偏积极",
     "pinyin": "wáng zhì chéng",
     "created_at": "2026-09-15T06:55:12+00:00"
+  },
+  {
+    "text": "爸爸爱你哦",
+    "score": 0.97,
+    "label": "偏积极",
+    "pinyin": "bà bà ài nǐ ó",
+    "created_at": "2026-09-16T04:01:31+00:00"
   }
 ]
